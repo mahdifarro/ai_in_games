@@ -260,6 +260,7 @@ def run_evaluation_xml_levels(level_folder_path, parameter, start_game=True):
         )
         current_data_dict[level_data['level_index'] - 3]['sim_data'] = sim_data
         if sim_data['is_stable']:
+            print(level_data['level_index'] - 3)
             number_of_stables += 1
 
     game_manager.go_to_menu()
@@ -272,7 +273,69 @@ def run_evaluation_xml_levels(level_folder_path, parameter, start_game=True):
 
     print("Number of stable levels: ", number_of_stables)
 
-    game_manager.stop_game()
+    # game_manager.stop_game()
+
+
+def run_evaluation_xml_levels_one_by_one(level_folder_path, parameter, start_game=True):
+    config = Config.get_instance()
+
+    game_connection = GameConnection(conf=config, port=9001)
+    game_manager: GameManager = GameManager(config, game_connection=game_connection)
+    if start_game:
+        game_manager.start_game()
+
+    print('\n\n')
+    logger.debug("Run parameters: " + str(parameter))
+
+    data_output = dict()
+    data_output['parameter'] = parameter
+
+    start = time.time()
+
+    # level_count = sum(len(files) for _, _, files in os.walk(level_folder_path))
+    sorted_levels = sorted(Path(level_folder_path).glob('*.*'), key=lambda x: int(x.stem.split('_')[1]))
+    level_count = len(sorted_levels)
+
+    stable_level_names = []
+    for level_index in range(level_count):
+
+        game_manager.copy_game_level(
+            level_path=level_folder_path,
+            level_index=level_index,
+            rescue_level=False
+        )
+
+        game_manager.simulate_all_levels(start_idx = 3, end_idx = 4, wait_for_stable = True,
+                                     wait_for_response = False)
+
+        current_data_dict = dict()
+        response = game_manager.game_connection.wait_for_response()
+        parsed = json.loads(response[1]['data'])
+        for level_data in parsed['levelData']:
+            current_data_dict[level_data['level_index'] - 3] = dict()
+            sim_data = dict(
+                damage=level_data['initial_damage'],
+                is_stable=level_data['is_stable'],
+                woodBlockDestroyed=level_data['woodBlockDestroyed'],
+                iceBlockDestroyed=level_data['iceBlockDestroyed'],
+                stoneBlockDestroyed=level_data['stoneBlockDestroyed']
+            )
+            current_data_dict[level_data['level_index'] - 3]['sim_data'] = sim_data
+            if sim_data['is_stable']:
+                stable_level_names.append(sorted_levels[level_index])
+
+        game_manager.go_to_menu()
+
+    end = time.time()
+    print(f'Run time: {end - start}')
+
+    # data_output['data'] = current_data_dict
+    data_output['time'] = end - start
+
+    print("Number of stable levels: ", len(stable_level_names))
+    print("List of stable level names:", stable_level_names)
+
+    # game_manager.stop_game()
 
 
 def create_tests():
@@ -319,7 +382,7 @@ def eval_grid_search():
 
 if __name__ == '__main__':
     parameters = create_tests()
-    run_evaluation_xml_levels("temp", parameters[0])
+    run_evaluation_xml_levels_one_by_one("temp", parameters[0])
     # # create_data_set()
     # continue_search = True
     # while continue_search:

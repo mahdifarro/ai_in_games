@@ -128,6 +128,44 @@ class GameManager:
 
         return ret_copied_levels
 
+    def copy_game_level(self, level_path=None, level_index=0, rescue_level=None):
+        if rescue_level is None:
+            rescue_level = self.rescue_level
+
+        if level_path is None:
+            level_path = self.conf.generated_level_path
+
+        if rescue_level:
+            current_rescue_level_pat = self.rescue_level_path
+            timestr = time.strftime("%Y%m%d-%H%M%S")
+            current_rescue_level_path = current_rescue_level_pat.replace("{timestamp}", timestr)
+
+            # Check if folder exists
+            if not os.path.exists(current_rescue_level_path):
+                os.makedirs(current_rescue_level_path, exist_ok=True, mode=0o777)
+
+            # Move files to rescue folder
+            for src_file in Path(self.conf.get_game_level_path()).glob('*.*'):
+                shutil.move(str(src_file), current_rescue_level_path)
+        else:
+            # Remove existing files in the game level folder
+            for level in Path(self.conf.get_game_level_path()).glob('*.*'):
+                os.remove(level)
+
+        # Copy new levels to the game level folder
+        ret_copied_levels = []
+
+        sorted_levels = sorted(Path(level_path).glob('*.*'), key=lambda x: int(x.stem.split('_')[1]))
+
+        src_file = sorted_levels[level_index]
+        ret_copied_levels.append(src_file)
+        shutil.copy2(str(src_file), self.conf.get_game_level_path())
+
+        # Load level menu
+        self.game_connection.load_level_menu()
+
+        return ret_copied_levels
+
     def change_level(self, path, delete_level = True, wait_for_stable = False, stopTime = False):
         if delete_level:
             for level in Path(self.conf.get_game_level_path()).glob('*.*'):
