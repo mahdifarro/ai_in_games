@@ -6,6 +6,8 @@ import sys
 import time
 from enum import Enum
 from pathlib import Path
+import argparse
+
 
 from exceptions.Exceptions import ParameterException
 from generator.baseline.Baseline import BaselineGenerator
@@ -182,9 +184,20 @@ class Config:
 
     @staticmethod
     def get_instance(args = None):
+        default_args = {
+            'model': 'WGANGP128128_Multilayer',
+            'dataset': '../train_datasets/modified_set',
+            'epoch': 200,
+            'batch_size': 32,
+            'multi_layer_size': 5,
+            'augmentation': True,
+            'run_name': 'test_run_200',
+            'save_location': './trained_models',
+            'dataset_save_location': './train_datasets'
+        }
+
         if Config.instance is None:
-            parser = get_program_arguments()
-            parsed_args = parser.parse_args(args = args)
+            parsed_args = argparse.Namespace(**default_args)  # Create a namespace with default values
             Config.instance = Config(parsed_args)
 
         return Config.instance
