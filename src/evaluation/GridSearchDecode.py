@@ -336,7 +336,7 @@ def run_evaluation_xml_levels_one_by_one(level_folder_path, parameter, start_gam
     print("List of stable level names:", stable_level_names)
 
     # game_manager.stop_game()
-
+    return True if len(stable_level_names) == level_count else False
 
 def create_tests():
     parameter_dict = dict(
