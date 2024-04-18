@@ -30,7 +30,8 @@ class LevelDataset:
         return len(list(self.get_dataset()))
 
     def get_dataset(self):
-        return self.dataset.shuffle(buffer_size = 60000).batch(self.batch_size, drop_remainder=True)
+        # return self.dataset.shuffle(buffer_size = 60000).batch(self.batch_size, drop_remainder=True)
+        return self.dataset.batch(self.batch_size, drop_remainder=True)
 
     def load_dataset(self, normalize = True):
         # Load the dataset from the tf record file
